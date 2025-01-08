@@ -108,8 +108,7 @@ func mergeConfigFiles(configFiles []string, config *Config) error {
 			Filebeat Config
 		}{}
 		//nolint:staticcheck // Let's keep the logic here
-		filepath := "./filebeat.yml"
-		err := cfgfile.Read(&tmpConfig, filepath)
+		err := cfgfile.Read(&tmpConfig, file)
 		if err != nil {
 			return fmt.Errorf("failed to read %s: %w", file, err)
 		}

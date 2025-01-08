@@ -240,11 +240,13 @@ func getLogFiles(directoryPath string, baseFileName string) ([]string, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to walk directory: %v", err)
+		infraLog.GlobalLog.Info(fmt.Sprintf("failed to walk directory: %v", err))
+		return nil, nil
 	}
 
 	if len(files) == 0 {
-		return nil, fmt.Errorf("no log files found in directory: %s", directoryPath)
+		infraLog.GlobalLog.Info("no log files found in directory")
+		return nil, nil
 	}
 
 	// 按文件名排序（升序），确保先读取最早的文件
@@ -310,6 +312,54 @@ func CreateLogEntryInfo(entry map[string]interface{}) (*LogEntryInfo, error) {
 		StatusCode: statusCode,
 	}, nil
 }
+
+//
+//func CreateLogEntryInfo(entries []map[string]interface{}) ([]LogEntryInfo, error) {
+//	var logEntries []LogEntryInfo
+//
+//	for _, entry := range entries {
+//		message, ok := entry["message"].(string)
+//		if !ok {
+//			return nil, fmt.Errorf("message field missing or not a string")
+//		}
+//
+//		// 清理消息中的乱码字符
+//		message = CleanText(message)
+//
+//		logPattern := `([\d\.]+) \S+ \S+ \[([^\]]+)] \"(\S+) (.*?) HTTP/(\S+)\" (\d+) (\d+)`
+//		reg := regexp.MustCompile(logPattern)
+//		matches := reg.FindStringSubmatch(message)
+//		if len(matches) < 7 {
+//			return nil, fmt.Errorf("unable to parse log message with expected format")
+//		}
+//
+//		clientIP := matches[1]
+//		timestampStr := matches[2]
+//		datetime, err := time.Parse("02/Jan/2006:15:04:05 -0700", timestampStr)
+//		if err != nil {
+//			return nil, fmt.Errorf("could not parse datetime: %v", err)
+//		}
+//
+//		method := matches[3]
+//		requestURL := matches[4]
+//		httpVersion := matches[5]
+//		statusCode, err := strconv.Atoi(matches[6])
+//		if err != nil {
+//			return nil, fmt.Errorf("invalid status code value: %v", err)
+//		}
+//
+//		logEntries = append(logEntries, LogEntryInfo{
+//			IP:         clientIP,
+//			Datetime:   datetime,
+//			Method:     method,
+//			URL:        requestURL,
+//			Protocol:   httpVersion,
+//			StatusCode: statusCode,
+//		})
+//	}
+//
+//	return logEntries, nil
+//}
 
 func extractFileName(filePath string) string {
 	// 从路径中提取文件名（如 log_output-20250106-159.ndjson）
