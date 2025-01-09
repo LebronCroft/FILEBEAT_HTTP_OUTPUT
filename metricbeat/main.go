@@ -16,18 +16,18 @@
 // under the License.
 
 /*
-Package winlogbeat contains the entrypoint to Winlogbeat which is a lightweight
-data shipper for Windows event logs. It ships events directly to Elasticsearch
-or Logstash. The data can then be visualized in Kibana.
+Package metricbeat contains the entrypoint to Metricbeat which is a lightweight
+data shipper for operating system and service metrics. It ships events directly
+to Elasticsearch or Logstash. The data can then be visualized in Kibana.
 
-Downloads: https://www.elastic.co/downloads/beats/winlogbeat
+Downloads: https://www.elastic.co/downloads/beats/metricbeat
 */
 package main
 
 import (
 	"os"
 
-	"github.com/elastic/beats/v7/winlogbeat/cmd"
+	"github.com/elastic/beats/v7/metricbeat/cmd"
 
 	_ "github.com/fufuok/beats-http-output/libbeat/outputs/http"
 )

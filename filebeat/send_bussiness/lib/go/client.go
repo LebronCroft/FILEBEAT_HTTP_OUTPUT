@@ -5,7 +5,7 @@ import (
 	"bufio"
 	"encoding/binary"
 	"fmt"
-	infraLog "github.com/elastic/beats/v7/infra"
+	infraLog "github.com/fufuok/beats-http-output/infra"
 	io "io"
 	"sync"
 )

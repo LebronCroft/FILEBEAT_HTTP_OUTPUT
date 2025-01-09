@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/logSync.iml" filepath="$PROJECT_DIR$/.idea/logSync.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/beats-http-output.iml" filepath="$PROJECT_DIR$/.idea/beats-http-output.iml" />
     </modules>
   </component>
 </project>

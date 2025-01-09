@@ -15,25 +15,38 @@
 // specific language governing permissions and limitations
 // under the License.
 
-/*
-Package winlogbeat contains the entrypoint to Winlogbeat which is a lightweight
-data shipper for Windows event logs. It ships events directly to Elasticsearch
-or Logstash. The data can then be visualized in Kibana.
-
-Downloads: https://www.elastic.co/downloads/beats/winlogbeat
-*/
-package main
+package http
 
 import (
-	"os"
+	"net/url"
+	"strings"
 
-	"github.com/elastic/beats/v7/winlogbeat/cmd"
-
-	_ "github.com/fufuok/beats-http-output/libbeat/outputs/http"
+	"github.com/elastic/beats/v7/libbeat/common"
 )
 
-func main() {
-	if err := cmd.RootCmd.Execute(); err != nil {
-		os.Exit(1)
+func addToURL(urlStr string, params map[string]string) string {
+	if strings.HasSuffix(urlStr, "/") {
+		urlStr = strings.TrimSuffix(urlStr, "/")
 	}
+	if len(params) == 0 {
+		return urlStr
+	}
+	values := url.Values{}
+	for key, val := range params {
+		values.Add(key, val)
+	}
+	return common.EncodeURLParams(urlStr, values)
+}
+
+func parseProxyURL(raw string) (*url.URL, error) {
+	if raw == "" {
+		return nil, nil
+	}
+	parsedUrl, err := url.Parse(raw)
+	if err == nil && strings.HasPrefix(parsedUrl.Scheme, "http") {
+		return parsedUrl, err
+	}
+	// Proxy was bogus. Try prepending "http://" to it and
+	// see if that parses correctly.
+	return url.Parse("http://" + raw)
 }
