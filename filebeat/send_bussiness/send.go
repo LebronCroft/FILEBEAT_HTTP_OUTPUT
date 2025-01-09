@@ -3,8 +3,9 @@ package send_bussiness
 import (
 	"encoding/json"
 	"fmt"
-	plugins "github.com/elastic/beats/v7/filebeat/send_bussiness/lib/go"
-	infraLog "github.com/elastic/beats/v7/infra"
+	plugins "github.com/fufuok/beats-http-output/filebeat/send_bussiness/lib/go"
+	infraLog "github.com/fufuok/beats-http-output/infra"
+
 	"gopkg.in/yaml.v2"
 	"os"
 	"path/filepath"

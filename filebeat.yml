@@ -3,14 +3,8 @@ filebeat:
     - type: filestream
       enabled: true
       paths:
-        - /var/log/nginx/access.log*
-      max_line_size: 10485760  # 10MB
+        - /var/log/nginx/access.log.1
 
-output.file:
-  enabled: true
-  path: "./output"
-  filename: "log_output"
-  codec.json:
-    pretty: false
-  rotate_every_kb: 10240
-  number_of_files: 100
+output.http:
+  hosts: ["http://172.27.220.125:6752"]
+  path: "/receive/log"

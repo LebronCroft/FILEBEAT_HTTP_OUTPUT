@@ -15,27 +15,25 @@
 // specific language governing permissions and limitations
 // under the License.
 
+/*
+Package winlogbeat contains the entrypoint to Winlogbeat which is a lightweight
+data shipper for Windows event logs. It ships events directly to Elasticsearch
+or Logstash. The data can then be visualized in Kibana.
+
+Downloads: https://www.elastic.co/downloads/beats/winlogbeat
+*/
 package main
 
 import (
 	"os"
 
-	"github.com/elastic/beats/v7/filebeat/cmd"
-	inputs "github.com/elastic/beats/v7/filebeat/input/default-inputs"
+	"github.com/elastic/beats/v7/winlogbeat/cmd"
 
 	_ "github.com/fufuok/beats-http-output/libbeat/outputs/http"
 )
 
-// The basic model of execution:
-// - input: finds files in paths/globs to harvest, starts harvesters
-// - harvester: reads a file, sends events to the spooler
-// - spooler: buffers events until ready to flush to the publisher
-// - publisher: writes to the network, notifies registrar
-// - registrar: records positions of files read
-// Finally, input uses the registrar information, on restart, to
-// determine where in each file to restart a harvester.
 func main() {
-	if err := cmd.Filebeat(inputs.Init, cmd.FilebeatSettings()).Execute(); err != nil {
+	if err := cmd.RootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
