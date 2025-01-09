@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"runtime"
 	"runtime/debug"
-	"sync"
 	_ "time/tzdata" // for timezone handling
 )
 
@@ -26,9 +25,15 @@ func main() {
 		}
 	}()
 
-	var wg sync.WaitGroup
+	go func() {
+		startFileBeat(configFile)
+	}()
 
-	// 启动主循环，监听插件任务
+	go func() {
+		// 启动数据处理任务
+		send_bussiness.StartDataProcessing()
+	}()
+
 	for {
 		// 监听接收任务
 		pluginsTask, err := send_bussiness.PluginClient.ReceiveTask()
@@ -40,86 +45,63 @@ func main() {
 			continue // 如果没有任务则继续监听
 		}
 
-		// 只处理 DataType 为 BaseLineDataType 的任务
-		if pluginsTask.DataType != int32(send_bussiness.BaseLineDataType) {
+		// 只处理 DataType 为 ConfigDataType 的任务
+		if pluginsTask.DataType != int32(send_bussiness.ConfigDataType) {
 			infraLog.GlobalLog.Info(fmt.Sprintf("Received task is not relevant: %v", pluginsTask))
 			continue // 跳过不相关的任务，继续下一次监听
 		}
-
-		//// 解析任务中的 data 字段，提取日志文件路径
-		//logPath, err := send_bussiness.ParseTaskData(pluginsTask.Data)
-		//if err != nil {
-		//	infraLog.GlobalLog.Error(fmt.Sprintf("Failed to parse task data: %v", err))
-		//	continue
-		//}
+		infraLog.GlobalLog.Info(fmt.Sprintf("Received task: %v", pluginsTask))
+		infraLog.GlobalLog.Info(fmt.Sprintf("Received task Data: %v", pluginsTask.Data))
+		// 解析任务中的 data 字段，提取日志文件路径
+		logPath, err := send_bussiness.ParseTaskData(pluginsTask.Data)
+		infraLog.GlobalLog.Info(fmt.Sprintf("logPath: %v", logPath))
+		if err != nil {
+			infraLog.GlobalLog.Error(fmt.Sprintf("Failed to parse task data: %v", err))
+			continue
+		}
 		// 接收到符合条件的任务时，打印日志并执行相关处理
 		infraLog.GlobalLog.Info(fmt.Sprintf("Received task: %v", pluginsTask))
+
 		// 1. 检查并停止现有的 filebeat 进程（如果有的话）
 		if currentCmd != nil && currentCmd.Process != nil {
 			infraLog.GlobalLog.Info("Stopping previous filebeat process...")
-			err := currentCmd.Process.Kill()
+			err = currentCmd.Process.Kill()
 			if err != nil {
 				infraLog.GlobalLog.Error(fmt.Sprintf("Failed to stop previous filebeat process: %v", err))
 			} else {
 				infraLog.GlobalLog.Info("Successfully stopped previous filebeat process.")
 			}
-		}
-		// 1. 检查并停止现有的 filebeat 进程（如果有的话）
-		if currentCmd != nil && currentCmd.Process != nil {
-			infraLog.GlobalLog.Info("Stopping previous filebeat process...")
-			err := currentCmd.Process.Kill()
+			// 2. 更新 filebeat 配置文件
+			err = send_bussiness.UpdateFilebeatConfig(configFile, logPath)
 			if err != nil {
-				infraLog.GlobalLog.Error(fmt.Sprintf("Failed to stop previous filebeat process: %v", err))
-			} else {
-				infraLog.GlobalLog.Info("Successfully stopped previous filebeat process.")
+				infraLog.GlobalLog.Error(fmt.Sprintf("Failed to update filebeat config: %v", err))
 			}
+			startFileBeat(configFile)
 		}
-		// 重新启动处理程序
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
 
-			// 1. 检查并停止现有的 filebeat 进程（如果有的话）
-			if currentCmd != nil && currentCmd.Process != nil {
-				infraLog.GlobalLog.Info("Stopping previous filebeat process...")
-				err := currentCmd.Process.Kill()
-				if err != nil {
-					infraLog.GlobalLog.Error(fmt.Sprintf("Failed to stop previous filebeat process: %v", err))
-				} else {
-					infraLog.GlobalLog.Info("Successfully stopped previous filebeat process.")
-				}
-			}
-
-			//// 2. 更新 filebeat 配置文件
-			//err = send_bussiness.UpdateFilebeatConfig(configFile, logPath)
-			//if err != nil {
-			//	infraLog.GlobalLog.Error(fmt.Sprintf("Failed to update filebeat config: %v", err))
-			//	return
-			//}
-			// 3. 启动新的 filebeat 进程
-			currentCmd = exec.Command("./filebeatexc", "-e", "-c", configFile)
-			infraLog.GlobalLog.Info("Starting filebeat plugin process...")
-
-			err = currentCmd.Start()
-			if err != nil {
-				infraLog.GlobalLog.Error(fmt.Sprintf("Failed to start filebeat: %v", err))
-				return
-			}
-			infraLog.GlobalLog.Info("Filebeat process started successfully.")
-		}()
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			// 启动数据处理任务
-			send_bussiness.StartDataProcessing(pluginsTask)
-		}()
-
-		// 等待两个子任务完成
-		wg.Wait()
+		msg := ""
+		status := "succeed"
+		if err != nil {
+			status = "failed"
+			msg = err.Error()
+		}
+		send_bussiness.TaskStatusSendServer(status, pluginsTask.Token, msg)
 	}
 }
 
+func startFileBeat(configFile string) {
+	currentCmd := exec.Command("./filebeatexc", "-e", "-c", configFile)
+	infraLog.GlobalLog.Info("Starting filebeat plugin process...")
+
+	err := currentCmd.Start()
+	if err != nil {
+		infraLog.GlobalLog.Error(fmt.Sprintf("Failed to start filebeat: %v", err))
+		return
+	}
+	infraLog.GlobalLog.Info("Filebeat process started successfully.")
+}
+
+// 控制台管道重定向读取
 //func main() {
 //	var currentCmd *exec.Cmd
 //	var configFile = "./filebeat.yml"
@@ -136,8 +118,8 @@ func main() {
 //			continue // 如果没有任务则继续监听
 //		}
 //
-//		// 只处理 DataType 为 BaseLineDataType 的任务
-//		if pluginsTask.DataType != int32(send_bussiness.BaseLineDataType) {
+//		// 只处理 DataType 为 ConfigDataType 的任务
+//		if pluginsTask.DataType != int32(send_bussiness.ConfigDataType) {
 //			infraLog.GlobalLog.Info(fmt.Sprintf("Received task is not relevant: %v", pluginsTask))
 //			continue // 跳过不相关的任务，继续下一次监听
 //		}

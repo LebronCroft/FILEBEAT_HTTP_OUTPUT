@@ -1,18 +1,13 @@
 package send_bussiness
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/elastic/beats/v7/filebeat/cmd"
-	inputs "github.com/elastic/beats/v7/filebeat/input/default-inputs"
 	plugins "github.com/elastic/beats/v7/filebeat/send_bussiness/lib/go"
 	infraLog "github.com/elastic/beats/v7/infra"
 	"gopkg.in/yaml.v2"
 	"os"
 	"path/filepath"
-	"regexp"
-	"sort"
 	"strings"
 	"time"
 )
@@ -23,8 +18,9 @@ func init() {
 }
 
 var (
-	BaseLineDataType = 7000
-	PluginClient     *plugins.Client
+	ConfigDataType = 7000
+	ReportDataType = 7001
+	PluginClient   *plugins.Client
 )
 
 type RetBaselineInfo struct {
@@ -44,27 +40,13 @@ type InputConfig struct {
 	// 其他需要的字段
 }
 
-// 查找最新的日志文件
-func findLatestLogFile(dir, pattern string) (string, error) {
-	files, err := filepath.Glob(filepath.Join(dir, pattern))
-	if err != nil {
-		return "", fmt.Errorf("error listing files: %v", err)
-	}
-	if len(files) == 0 {
-		return "", fmt.Errorf("no log files found matching pattern %s", pattern)
-	}
-
-	// 按文件名排序，确保最新的文件在最后
-	sort.Strings(files)
-	return files[len(files)-1], nil
-}
 func SendServer(LogEntryInfo []LogEntryInfo, token string) (err error) {
 
 	var dataInfo = []byte("") // 空的 JSON 对象作为初始值
 
 	infraLog.GlobalLog.Info(fmt.Sprintf("Preparing to send %d log entries to server", len(LogEntryInfo)))
 	record := plugins.Record{}
-	record.DataType = int32(BaseLineDataType)
+	record.DataType = int32(ReportDataType)
 	record.Timestamp = time.Now().Unix()
 	// 然后进行 JSON 编码
 	dataInfo, err = json.Marshal(LogEntryInfo)
@@ -97,41 +79,8 @@ func SendServer(LogEntryInfo []LogEntryInfo, token string) (err error) {
 	return nil
 }
 
-// CleanText 去除所有控制字符和不可见字符
-func CleanText(input string) string {
-	// 正则表达式匹配所有非打印字符
-	re := regexp.MustCompile(`[\x00-\x1F\x7F\uFFFD]`) // 匹配控制字符和 \ufffd 替代字符
-	cleaned := re.ReplaceAllString(input, "")         // 替换为 ""
-	return cleaned
-}
-
-// 启动 Filebeat 收集日志数据的函数
-func StartFilebeatLogCollector(ctx context.Context) {
-	infraLog.GlobalLog.Info("Starting Filebeat log collector...")
-
-	// 监听 context 的取消信号
-	go func() {
-		<-ctx.Done() // 等待取消信号
-		infraLog.GlobalLog.Info("Received stop signal. Stopping Filebeat log collector.")
-		// 在这里执行文件收集器的停止操作
-		// 比如关闭文件句柄等
-	}()
-
-	// 启动 Filebeat 进行日志收集
-	if _, err := cmd.Filebeat(inputs.Init, cmd.FilebeatSettings("")).ExecuteContextC(ctx); err != nil {
-		infraLog.GlobalLog.Error(fmt.Sprintf("Filebeat failed to start: %v", err))
-		os.Exit(1)
-	}
-	infraLog.GlobalLog.Info("Filebeat log collector started successfully")
-
-	time.AfterFunc(time.Second*10, func() {
-		ctx.Done()
-	})
-	// 其他逻辑保持不变
-}
-
 // Simplified data processing logic with continuous loop
-func StartDataProcessing(pluginsTask *plugins.Task) {
+func StartDataProcessing() {
 
 	infraLog.GlobalLog.Info("Starting data processing...")
 	for {
@@ -155,7 +104,7 @@ func StartDataProcessing(pluginsTask *plugins.Task) {
 
 		if len(logEntries) > 0 {
 			// 发送日志数据到服务器
-			err = SendServer(logEntries, pluginsTask.Token)
+			err = SendServer(logEntries, "0")
 			if err != nil {
 				infraLog.GlobalLog.Error(fmt.Sprintf("Error sending data to server: %v", err))
 			} else {
@@ -218,6 +167,7 @@ func deleteOldLogFiles(dir string, baseFileName string) error {
 // 解析任务中的 data 字段，提取 log_address
 func ParseTaskData(data interface{}) (string, error) {
 	// 如果 data 是字符串类型，首先解析该字符串为 map
+	infraLog.GlobalLog.Info(fmt.Sprintf("Parsing task data %s", data))
 	switch v := data.(type) {
 	case string:
 		// 解析 JSON 字符串为 map
@@ -246,14 +196,19 @@ func ParseTaskData(data interface{}) (string, error) {
 		return "", fmt.Errorf("failed to parse task data: expected string or map, got %T", v)
 	}
 }
-
 func UpdateFilebeatConfig(configFile, logPath string) error {
 	// 打开并解析现有的 filebeat.yml 配置文件
+	infraLog.GlobalLog.Info("Opening filebeat.yml configuration file...")
 	file, err := os.OpenFile(configFile, os.O_RDWR, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to open filebeat.yml: %v", err)
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+
+		}
+	}(file)
 
 	var config map[string]interface{}
 	decoder := yaml.NewDecoder(file)
@@ -262,33 +217,64 @@ func UpdateFilebeatConfig(configFile, logPath string) error {
 		return fmt.Errorf("failed to decode filebeat.yml: %v", err)
 	}
 
-	// 查找并更新 filebeat.inputs 配置
-	filebeatInputs, ok := config["filebeat"].(map[string]interface{})["inputs"].([]interface{})
+	// 打印整个配置，以便调试
+	infraLog.GlobalLog.Info(fmt.Sprintf("Decoded config: %+v", config))
+
+	// 查找并检查 filebeat 字段是否存在并正确解析
+	filebeatField, ok := config["filebeat"]
 	if !ok {
-		return fmt.Errorf("failed to find filebeat inputs in the config")
+		infraLog.GlobalLog.Error("filebeat field is missing in the config.")
+		return fmt.Errorf("filebeat field is missing in the config")
+	}
+
+	// 打印 filebeat 字段，看看它的类型和内容
+	infraLog.GlobalLog.Info(fmt.Sprintf("filebeat field type: %T, value: %+v", filebeatField, filebeatField))
+
+	// 检查 filebeat 字段是否是一个 map 类型
+	filebeatConfig, ok := filebeatField.(map[interface{}]interface{})
+	if !ok {
+		infraLog.GlobalLog.Error("filebeat field is not a map[interface{}]interface{}")
+		return fmt.Errorf("filebeat field is not a map[interface{}]interface{}")
+	}
+
+	// 继续打印检查 inputs 配置
+	infraLog.GlobalLog.Info(fmt.Sprintf("filebeat inputs: %+v", filebeatConfig["inputs"]))
+
+	// 查找并更新 filebeat.inputs 配置
+	filebeatInputs, ok := filebeatConfig["inputs"].([]interface{})
+	if !ok {
+		infraLog.GlobalLog.Error("filebeat.inputs is missing or not a slice.")
+		return fmt.Errorf("filebeat.inputs is missing or not a slice.")
 	}
 
 	// 假设你只需要修改第一个 inputs 条目
 	if len(filebeatInputs) > 0 {
-		input := filebeatInputs[0].(map[string]interface{})
-		input["paths"] = []string{logPath} // 更新为新的日志路径
+		input := filebeatInputs[0].(map[interface{}]interface{})
+		input["paths"] = []interface{}{logPath} // 更新为新的日志路径
 	} else {
 		// 如果没有找到任何 inputs 配置，则创建一个新的配置
-		config["filebeat"] = map[string]interface{}{
-			"inputs": []interface{}{
-				map[string]interface{}{
-					"type":          "filestream",
-					"enabled":       true,
-					"paths":         []string{logPath},
-					"max_line_size": 10485760, // 10MB
-				},
+		filebeatConfig["inputs"] = []interface{}{
+			map[interface{}]interface{}{
+				"type":          "filestream",
+				"enabled":       true,
+				"paths":         []interface{}{logPath},
+				"max_line_size": 10485760, // 10MB
 			},
 		}
 	}
 
+	// 打印更新后的配置
+	infraLog.GlobalLog.Info(fmt.Sprintf("Updated config: %+v", config))
+
 	// 写回更新后的配置到文件
-	file.Seek(0, 0)  // 重置文件指针
-	file.Truncate(0) // 清空文件内容
+	_, err = file.Seek(0, 0)
+	if err != nil {
+		return err
+	} // 重置文件指针
+	err = file.Truncate(0)
+	if err != nil {
+		return err
+	} // 清空文件内容
 	encoder := yaml.NewEncoder(file)
 	err = encoder.Encode(config)
 	if err != nil {
@@ -297,4 +283,23 @@ func UpdateFilebeatConfig(configFile, logPath string) error {
 
 	infraLog.GlobalLog.Info(fmt.Sprintf("filebeat.yml updated with log path: %v", logPath))
 	return nil
+}
+
+// TaskStatusSendServer send task result to server
+func TaskStatusSendServer(status string, token string, msg string) {
+	record := plugins.Record{}
+	record.DataType = int32(ConfigDataType)
+	record.Timestamp = time.Now().Unix()
+
+	payload := plugins.Payload{}
+	field := make(map[string]string, 0)
+	field["status"] = status
+	if token != "" {
+		field["token"] = token
+	}
+	field["msg"] = msg
+	payload.Fields = field
+	record.Data = &payload
+
+	_ = PluginClient.SendRecord(&record)
 }
