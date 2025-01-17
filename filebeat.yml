@@ -1,0 +1,11 @@
+filebeat:
+  modules:
+    - module: nginx
+      access:
+        enabled: true
+        var.paths: ["/var/log/nginx/access.log"]
+output:
+  http:
+    hosts:
+      - http://172.29.83.70:6752
+    path: /receive/log
