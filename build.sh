@@ -12,7 +12,7 @@ for arch in arm64 amd64; do
     cd ..
 
     # 打包构建结果并压缩
-    tar -zcvf logsync-linux-${BUILD_VERSION}.${arch}.tar.gz ${pkg} filebeat.yml filebeatexc
+    tar -zcvf logsync-linux-${BUILD_VERSION}.${arch}.tar.gz ${pkg} filebeat.yml filebeatexc module modules.d
 
     # 移动压缩包到输出目录
     mv logsync-linux-${BUILD_VERSION}.${arch}.tar.gz ./output/

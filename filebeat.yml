@@ -1,28 +1,11 @@
-#filebeat:
-#  inputs:
-#    - type: filestream
-#      enabled: true
-#      paths:
-#        - /var/log/nginx/access.log*
-#      fields:
-#        agentID: ""
-#filebeat:
-#  modules:
-#    - module: nginx
-#      access:
-#        enabled: true
-#        var.paths: ["/var/log/nginx/access.log*"]
-#      error:
-#        enabled: true
-#        var.paths: ["/var/log/nginx/error.log*"]
-#  fields:
-#    agentID: "your-agent-id"
-filebeat.inputs:
-  - type: log
-    enabled: true
-    paths:
-      - "/tmp/empty.log"  # 你可以使用一个空的文件路径
-
-output.http:
-  hosts: ["http://172.27.220.125:6752"]
-  path: "/receive/log"
+filebeat:
+  modules:
+    - module: nginx
+      access:
+        enabled: true
+        var.paths: ["/var/log/nginx/access.log"]
+output:
+  http:
+    hosts:
+      - http://172.29.83.70:6752
+    path: /receive/log
