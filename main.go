@@ -12,6 +12,14 @@ import (
 
 var fileBeatConfigFile = "/filebeat.yml"
 var agentIDAddress = "/etc/one-agent/machine-id"
+var jsonData = []byte(`
+[
+    {
+        "module_name": "nginx",
+        "mode": 0
+    }
+]
+`)
 
 func main() {
 	wd, err := os.Getwd()
@@ -30,15 +38,7 @@ func main() {
 		infraLog.GlobalLog.Error(fmt.Sprintf("[FATAL] GetAgentID failed: %s", err.Error()))
 		return
 	}
-	// 生成配置文件
-	jsonData := []byte(`
-[
-    {
-        "module_name": "nginx",
-        "mode": 0
-    }
-]
-`)
+	// 生成初始配置文件
 
 	config, err := filebeatConfig.GenerateFilebeatConfig(jsonData, agentID)
 	if err != nil {
