@@ -114,20 +114,25 @@ func main() {
 }
 
 func startFileBeat(configFile string) {
+	for {
+		// 启动新的 filebeat 进程
+		currentCmd := exec.Command("./filebeatexc", "-e", "-c", configFile)
+		infraLog.GlobalLog.Info("Starting filebeat plugin process...")
 
-	// 启动新的 filebeat 进程
-	currentCmd := exec.Command("./filebeatexc", "-e", "-c", configFile)
-	infraLog.GlobalLog.Info("Starting filebeat plugin process...")
-	err := currentCmd.Start()
-	if err != nil {
-		infraLog.GlobalLog.Error(fmt.Sprintf("Failed to start filebeat: %v", err))
-		return
-	}
-	infraLog.GlobalLog.Info("Filebeat process started successfully.")
+		err := currentCmd.Start()
+		if err != nil {
+			infraLog.GlobalLog.Error(fmt.Sprintf("Failed to start filebeat: %v", err))
+			return
+		}
+		infraLog.GlobalLog.Info("Filebeat process started successfully.")
 
-	// 等待进程结束
-	err = currentCmd.Wait()
-	if err != nil {
-		infraLog.GlobalLog.Error(fmt.Sprintf("Filebeat process exited with error: %v", err))
+		// 等待进程结束
+		err = currentCmd.Wait()
+		if err != nil {
+			infraLog.GlobalLog.Error(fmt.Sprintf("Filebeat process exited with error: %v", err))
+		}
+
+		// 如果 filebeat 进程退出，则尝试重新启动
+		infraLog.GlobalLog.Info("Filebeat process crashed or was stopped. Restarting...")
 	}
 }
