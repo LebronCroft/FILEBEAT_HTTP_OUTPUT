@@ -1,18 +1,19 @@
-# Module: logstash
-# Docs: https://www.elastic.co/guide/en/beats/filebeat/main/filebeat-module-logstash.html
+# Module: apache
+# Docs: https://www.elastic.co/guide/en/beats/filebeat/main/filebeat-module-apache.html
 
-- module: logstash
-  # logs
-  log:
-    enabled: false
+- module: apache
+  # Access logs
+  access:
+    enabled: true
 
     # Set custom paths for the log files. If left empty,
     # Filebeat will choose the paths depending on your OS.
     #var.paths:
 
-  # Slow logs
-  slowlog:
-    enabled: false
+  # Error logs
+  error:
+    enabled: true
+
     # Set custom paths for the log files. If left empty,
     # Filebeat will choose the paths depending on your OS.
     #var.paths:

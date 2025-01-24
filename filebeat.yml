@@ -1,11 +1,14 @@
 filebeat:
-  modules:
-    - module: nginx
-      access:
+  config:
+    modules:
+      enabled: true
+      path: ./modules.d/filebeat.yml
+      reload:
         enabled: true
-        var.paths: ["/var/log/nginx/access.log"]
+        period: 10s
+fields:
+  agentID: f0f94256-83b2-522f-b749-0f14fea84456
 output:
   http:
-    hosts:
-      - http://172.29.83.70:6752
+    hosts: http://172.27.220.125:6752
     path: /receive/log
