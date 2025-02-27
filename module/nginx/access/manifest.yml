@@ -1,0 +1,15 @@
+module_version: "1.0"
+
+var:
+  - name: paths
+    default:
+      - /var/log/nginx/access.log
+      - /usr/local/ztwan/log/ae.log
+ingest_pipeline: ingest/pipeline.yml
+input: config/nginx-access.yml
+
+requires.processors:
+- name: user_agent
+  plugin: ingest-user-agent
+- name: geoip
+  plugin: ingest-geoip

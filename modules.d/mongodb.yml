@@ -1,0 +1,3 @@
+- module: mongodb
+  log:
+    enabled: false

@@ -1,0 +1,3 @@
+- module: postgresql
+  log:
+    enabled: true

@@ -1,0 +1,14 @@
+- module: nginx
+  access:
+    enabled: true
+    var:
+      paths:
+        - /var/log/nginx/access.log
+        - /usr/local/ztwan/log/ae.log
+  error:
+    enabled: true
+    var:
+      paths:
+        - /var/log/nginx/error.log
+        - /usr/local/openresty/nginx/logs/http_error.log
+

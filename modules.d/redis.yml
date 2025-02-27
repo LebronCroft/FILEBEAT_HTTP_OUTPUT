@@ -1,0 +1,5 @@
+- module: redis
+  log:
+    enabled: true
+  slowlog:
+    enabled: true

@@ -1,0 +1,28 @@
+filebeat:
+  config:
+    modules:
+      enabled: true
+      path: ./modules.d/filebeat.yml
+      reload:
+        enabled: true
+        period: 10s
+fields:
+  agentID:
+
+queue:
+  mem:
+    events: 10000         # 内存队列中最多缓存 10000 条事件
+    flush:
+      min_events: 500   # 存队列中累积的事件数
+      timeout: 5s         # 等待时间上限
+# 正确配置自定义路径的日志输入
+
+output:
+  http:
+    hosts:
+      - "http://172.27.220.125:6752"
+    path: "/receive/log"
+    bulk_max_size: 500                  # 每个HTTP请求最多包含 5 条事件
+    worker: 4                           # 启用4 并发工作线程来发送 HTTP 请求，提高发送吞吐量
+    max_retries: 3                      # 当HTTP 求失败时，最多重试 3 次
+    timeout: 60s                        # HTTP请求的超时时间为 60 秒，超时重试
