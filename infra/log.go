@@ -31,13 +31,13 @@ var (
 
 func init() {
 	logConfig := LogConfig{
-		LogFilePath: "./logs/",             // 默认日志目录
-		MaxSize:     100,                  // 每个日志文件最大 100MB
-		MaxBackups:  3,                    // 最多保留 3 个旧日志文件
-		MaxAge:      30,                   // 日志最多保存 30 天
-		Compress:    true,                 // 是否压缩旧日志文件
-		LogLevel:    "INFO",               // 默认日志级别
-		ModuleName:  "plugin_logsync_001", // 模块名
+		LogFilePath: "./logs/",          // 默认日志目录
+		MaxSize:     100,                // 每个日志文件最大 100MB
+		MaxBackups:  3,                  // 最多保留 3 个旧日志文件
+		MaxAge:      30,                 // 日志最多保存 30 天
+		Compress:    true,               // 是否压缩旧日志文件
+		LogLevel:    "INFO",             // 默认日志级别
+		ModuleName:  "your_module_name", // 模块名
 	}
 
 	// 创建日志目录，如果不存在

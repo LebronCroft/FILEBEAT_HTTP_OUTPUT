@@ -34,9 +34,6 @@ type FilebeatConfig struct {
 			} `yaml:"modules"`
 		} `yaml:"config"`
 	} `yaml:"filebeat"`
-	Fields struct {
-		AgentID string `yaml:"agentID"`
-	} `yaml:"fields"`
 	Output struct {
 		HTTP struct {
 			Hosts []string `yaml:"hosts"`
@@ -194,38 +191,6 @@ func generateCustomFilebeatConfig(config ModuleConfig) string {
 	}
 
 	return builder.String()
-}
-
-// 修改配置文件中的 agentID
-func UpdateAgentIDInConfigFile(configFile string, newAgentID string) error {
-	// 读取原始配置文件内容
-	data, err := ioutil.ReadFile(configFile)
-	if err != nil {
-		return fmt.Errorf("Error reading config file: %v", err)
-	}
-
-	// 解析 YAML 内容到结构体
-	var config FilebeatConfig
-	err = yaml.Unmarshal(data, &config)
-	if err != nil {
-		return fmt.Errorf("Error parsing YAML: %v", err)
-	}
-	// 确保 agentID 为字符串类型
-	// 强制转换为字符串并更新
-	config.Fields.AgentID = fmt.Sprintf("%v", newAgentID)
-	// 将更新后的结构体重新编码为 YAML 格式
-	updatedData, err := yaml.Marshal(&config)
-	if err != nil {
-		return fmt.Errorf("Error marshaling updated config: %v", err)
-	}
-
-	// 将更新后的内容写回到配置文件
-	err = ioutil.WriteFile(configFile, updatedData, 0644)
-	if err != nil {
-		return fmt.Errorf("Error writing updated config file: %v", err)
-	}
-
-	return nil
 }
 
 // 将配置写入 YAML 文件

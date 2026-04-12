@@ -3,6 +3,7 @@ module_version: 1.0
 var:
   - name: paths
     default:
+      - /var/log/secure.log*
     os.darwin:
       # this works in OS X < 10.8. Newer darwin versions don't write
       # ssh logs to files

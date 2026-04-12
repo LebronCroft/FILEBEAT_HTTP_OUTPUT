@@ -1,0 +1,8 @@
+.idea/
+.gocache/
+.gomodcache/
+logs/
+*.log
+bin/
+filebeatexc
+performance.log

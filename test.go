@@ -136,28 +136,16 @@ func StartFileBeatForTest() *exec.Cmd {
 }
 
 func main() {
-	//infraLog.GlobalLog.Println("Starting all tasks...")
-	//go GenerateLogs(filepath, 1, 1)
-	////// 开始性能监控（异步执行）
-	////go StartPerformanceMonitoring()
-	//
-	//// 阻塞主线程，防止程序退出
-	//select {}
-	// 使用 Ticker 每 2 秒执行一次 GenerateLogs
+
 	err := GenerateLogs(filepath, 10000, 1000)
 	if err != nil {
 		fmt.Println("Error generating log:", err)
 	}
-	//infraLog.GlobalLog.Println("Starting all tasks...")
-	//// 开始性能监控（异步执行）
-	//go StartPerformanceMonitoring()
-	//
-	//// 阻塞主线程，防止程序退出
-	//select {}
-	//ticker := time.NewTicker(2 * time.Second)
-	//defer ticker.Stop()
-	//
-	//for range ticker.C {
+	infraLog.GlobalLog.Println("Starting all tasks...")
+	// 开始性能监控（异步执行）
+	go StartPerformanceMonitoring()
 
-	//}
+	// 阻塞主线程，防止程序退出
+	select {}
+
 }

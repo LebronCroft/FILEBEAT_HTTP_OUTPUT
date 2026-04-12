@@ -3,6 +3,7 @@ module_version: "1.0"
 var:
   - name: paths
     default:
+      - /var/log/system.log*
     os.darwin:
       - /var/log/system.log*
     os.windows: []

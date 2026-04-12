@@ -1,7 +1,0 @@
---------------------
-2025-02-24 16:37:14,453 [DEBUG] [Thread: 140404694509312] win_tools.py:489 wrapped_function |  do_config_cmd with (<ztwan.ae_node.AccessEdgeNode object at 0x7fb29cb2d7e0>, 'shell', 'wg set misas peer SieO9NrUj4B+/zKFFqvGfM2xqUv1P9/4byqovXHgYWA= endpoint 192.168.0.74:50002 allowed-ips 10.206.230.1/32,10.206.230.2/32;for ip in 10.206.230.1/32 10.206.230.2/32;do ip route add $ip dev misas;done') and {}
---------------------
-2025-02-24 16:37:14,458 [INFO] [Thread: 140404694509312] netnode.py:743 run_shell | shell command wg set misas peer SieO9NrUj4B+/zKFFqvGfM2xqUv1P9/4byqovXHgYWA= endpoint 192.168.0.74:50002 allowed-ips 10.206.230.1/32,10.206.230.2/32;for ip in 10.206.230.1/32 10.206.230.2/32;do ip route add $ip dev misas;done  success!
---------------------
-2025-02-24 16:37:14,459 [DEBUG] [Thread: 140404694509312] netnode.py:733 config_cmd_process | 公共节点基础模块/config command命令接收处理 body = {'node_id': 'orgf462a4c226c845e4bc5.gateway1', 'config': '{"shell": "wg set misas peer SieO9NrUj4B+/zKFFqvGfM2xqUv1P9/4byqovXHgYWA= endpoint 192.168.0.74:50002 allowed-ips 10.206.230.1/32,10.206.230.2/32;for ip in 10.206.230.1/32 10.206.230.2/32;do ip route add $ip dev misas;done"}', 'msg': {}, 'msgtype': 'config_cmd', 'src_id': 'misas.scc', 'dst_id': 'orgf462a4c226c845e4bc5.gateway1'}, reqdict = {'node_id': 'orgf462a4c226c845e4bc5.gateway1', 'config': '{"shell": "success!"}', 'msg': {}}
---------------------

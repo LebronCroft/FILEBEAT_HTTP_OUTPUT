@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"reflect"
 )
 
 type bodyEncoder interface {
@@ -141,20 +140,7 @@ func (b *jsonLinesEncoder) Marshal(obj interface{}) error {
 
 func (b *jsonLinesEncoder) AddRaw(obj interface{}) error {
 	enc := json.NewEncoder(b.buf)
-
-	// single event
-	if reflect.TypeOf(obj).Kind() == reflect.Map {
-		return enc.Encode(obj)
-	}
-
-	// batch of events
-	for _, item := range obj.([]eventRaw) {
-		err := enc.Encode(item)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return encodeJSONLines(enc, obj)
 }
 
 func (b *jsonLinesEncoder) Add(meta, obj interface{}) error {
@@ -190,7 +176,7 @@ func (b *gzipEncoder) Reset() {
 }
 
 func (b *gzipEncoder) Reader() io.Reader {
-	b.gzip.Close()
+	b.gzip.Close()  // Close to flush all data
 	return b.buf
 }
 
@@ -221,10 +207,12 @@ func (b *gzipEncoder) Add(meta, obj interface{}) error {
 
 	if err := enc.Encode(meta); err != nil {
 		b.buf.Truncate(pos)
+		b.gzip.Reset(b.buf)  // Reset gzip writer state after truncate
 		return err
 	}
 	if err := enc.Encode(obj); err != nil {
 		b.buf.Truncate(pos)
+		b.gzip.Reset(b.buf)  // Reset gzip writer state after truncate
 		return err
 	}
 
@@ -250,7 +238,7 @@ func (b *gzipLinesEncoder) Reset() {
 }
 
 func (b *gzipLinesEncoder) Reader() io.Reader {
-	b.gzip.Close()
+	b.gzip.Close()  // Close to flush all data
 	return b.buf
 }
 
@@ -270,20 +258,7 @@ func (b *gzipLinesEncoder) Marshal(obj interface{}) error {
 
 func (b *gzipLinesEncoder) AddRaw(obj interface{}) error {
 	enc := json.NewEncoder(b.gzip)
-
-	// single event
-	if reflect.TypeOf(obj).Kind() == reflect.Map {
-		return enc.Encode(obj)
-	}
-
-	// batch of events
-	for _, item := range obj.([]eventRaw) {
-		err := enc.Encode(item)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return encodeJSONLines(enc, obj)
 }
 
 func (b *gzipLinesEncoder) Add(meta, obj interface{}) error {
@@ -291,13 +266,29 @@ func (b *gzipLinesEncoder) Add(meta, obj interface{}) error {
 
 	if err := b.AddRaw(meta); err != nil {
 		b.buf.Truncate(pos)
+		b.gzip.Reset(b.buf)  // Reset gzip writer state after truncate
 		return err
 	}
 	if err := b.AddRaw(obj); err != nil {
 		b.buf.Truncate(pos)
+		b.gzip.Reset(b.buf)  // Reset gzip writer state after truncate
 		return err
 	}
 
 	b.gzip.Flush()
 	return nil
+}
+
+func encodeJSONLines(enc *json.Encoder, obj interface{}) error {
+	switch v := obj.(type) {
+	case []eventRaw:
+		for _, item := range v {
+			if err := enc.Encode(item); err != nil {
+				return err
+			}
+		}
+		return nil
+	default:
+		return enc.Encode(obj)
+	}
 }
