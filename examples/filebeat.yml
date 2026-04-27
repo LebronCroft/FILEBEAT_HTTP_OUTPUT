@@ -1,0 +1,28 @@
+filebeat:
+  inputs:
+    - type: filestream
+      id: example-application-log
+      enabled: true
+      paths:
+        - /var/log/example/*.log
+
+output:
+  http:
+    hosts:
+      - "https://example.com:8080"
+    path: "/receive/log"
+    format: json
+    batch_publish: true
+    batch_size: 2048
+    max_retries: 3
+    timeout: 60s
+    headers:
+      Authorization: "Bearer your-token-here"
+
+logging:
+  level: info
+  to_files: true
+  files:
+    path: ./logs
+    name: filebeat-http-output
+    keepfiles: 3

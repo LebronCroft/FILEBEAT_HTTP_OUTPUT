@@ -40,6 +40,66 @@ type FilebeatConfig struct {
 			Path  string   `yaml:"path"`
 		} `yaml:"http"`
 	} `yaml:"output"`
+	Logging LoggingConfig `yaml:"logging"`
+	Scripts ScriptsConfig `yaml:"scripts"`
+}
+
+type LoggingConfig struct {
+	Path       string `yaml:"path"`
+	ModuleName string `yaml:"module_name"`
+	MaxSize    int    `yaml:"max_size"`
+	MaxBackups int    `yaml:"max_backups"`
+	MaxAge     int    `yaml:"max_age"`
+	Compress   bool   `yaml:"compress"`
+}
+
+type ScriptsConfig struct {
+	ModuleWatcher ModuleWatcherConfig `yaml:"module_watcher"`
+}
+
+type ModuleWatcherConfig struct {
+	Enabled   bool   `yaml:"enabled"`
+	Directory string `yaml:"directory"`
+	Interval  string `yaml:"interval"`
+}
+
+func LoadRuntimeConfig(filename string) (*FilebeatConfig, error) {
+	content, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config file: %w", err)
+	}
+
+	cfg := &FilebeatConfig{}
+	if err := yaml.Unmarshal(content, cfg); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal config file: %w", err)
+	}
+
+	if cfg.Logging.Path == "" {
+		cfg.Logging.Path = "./logs/"
+	}
+	if cfg.Logging.ModuleName == "" {
+		cfg.Logging.ModuleName = "filebeat-http-output"
+	}
+	if cfg.Logging.MaxSize == 0 {
+		cfg.Logging.MaxSize = 100
+	}
+	if cfg.Logging.MaxBackups == 0 {
+		cfg.Logging.MaxBackups = 3
+	}
+	if cfg.Logging.MaxAge == 0 {
+		cfg.Logging.MaxAge = 30
+	}
+	if !cfg.Logging.Compress {
+		cfg.Logging.Compress = true
+	}
+	if cfg.Scripts.ModuleWatcher.Directory == "" {
+		cfg.Scripts.ModuleWatcher.Directory = "./modules.d"
+	}
+	if cfg.Scripts.ModuleWatcher.Interval == "" {
+		cfg.Scripts.ModuleWatcher.Interval = "1m"
+	}
+
+	return cfg, nil
 }
 
 func UpdateFilebeatConfig(jsonInput string, filebeatFilePath string) error {

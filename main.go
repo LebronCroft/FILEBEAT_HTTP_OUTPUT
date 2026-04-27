@@ -2,18 +2,47 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+
 	filebeatConfig "github.com/fufuok/beats-http-output/config"
 	"github.com/fufuok/beats-http-output/enum"
 	infraLog "github.com/fufuok/beats-http-output/infra"
 	_ "github.com/fufuok/beats-http-output/libbeat/outputs/http"
-	"github.com/fufuok/beats-http-output/send_bussiness"
-	"os"
-	"os/exec"
+	"github.com/fufuok/beats-http-output/script"
 )
 
 var cmd *exec.Cmd
 
 func main() {
+	wd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	configFile := wd + enum.FileBeatConfigFile
+	cfg, err := filebeatConfig.LoadRuntimeConfig(configFile)
+	if err != nil {
+		infraLog.GlobalLog.Error(fmt.Sprintf("Failed to load runtime config: %v", err))
+		return
+	}
+
+	infraLog.InitGlobalLogger(infraLog.LogConfig{
+		LogFilePath: cfg.Logging.Path,
+		MaxSize:     cfg.Logging.MaxSize,
+		MaxBackups:  cfg.Logging.MaxBackups,
+		MaxAge:      cfg.Logging.MaxAge,
+		Compress:    cfg.Logging.Compress,
+		ModuleName:  cfg.Logging.ModuleName,
+	})
+
+	manager, err := script.NewManager(cfg)
+	if err != nil {
+		infraLog.GlobalLog.Error(fmt.Sprintf("Failed to create script manager: %v", err))
+		return
+	}
+	defer manager.Stop()
+
 	defer func() {
 		if cmd != nil && cmd.Process != nil {
 			err := cmd.Process.Kill()
@@ -23,15 +52,18 @@ func main() {
 				infraLog.GlobalLog.Info("Filebeat process killed successfully.")
 			}
 		}
-		println("main exit")
 	}()
-
-	infraLog.GlobalLog.Info("Filebeat config generated successfully.")
 
 	// Start Filebeat
 	infraLog.GlobalLog.Info("Starting Filebeat with config file: " + configFile)
 	cmd = startFileBeat(configFile)
 
+	if err := manager.Start(); err != nil {
+		infraLog.GlobalLog.Error(fmt.Sprintf("Failed to start scripts: %v", err))
+		return
+	}
+
+	select {}
 }
 
 func startFileBeat(configFile string) *exec.Cmd {

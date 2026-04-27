@@ -1,3 +1,6 @@
+//go:build performance
+// +build performance
+
 package main
 
 import (
@@ -23,7 +26,7 @@ func GenerateLogs(filePath string, totalLogs, batchSize int) error {
 	defer file.Close()
 
 	for i := 0; i < totalLogs; i++ {
-		logLine := fmt.Sprintf("172.28.160.164 - - [%s +0800] \"GET /static/js/app.js HTTP/1.1\" 200 512 \"http://example.com\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/132.0.0.0\"\n", time.Now().Format("02/Jan/2006:15:04:05"))
+		logLine := fmt.Sprintf("127.0.0.1 - - [%s +0800] \"GET /static/js/app.js HTTP/1.1\" 200 512 \"http://example.com\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/132.0.0.0\"\n", time.Now().Format("02/Jan/2006:15:04:05"))
 		if _, err := file.WriteString(logLine); err != nil {
 			return fmt.Errorf("failed to write log: %v", err)
 		}
@@ -68,7 +71,7 @@ func StartPerformanceMonitoring() {
 }
 
 func getFilebeatPID() (int32, error) {
-	output, err := exec.Command("sh", "-c", "ps auf | grep '[.]\\/filebeatexc -e -c /root/beats-http-output/filebeat.yml'").Output()
+	output, err := exec.Command("sh", "-c", "ps auf | grep '[.]\\/filebeatexc -e -c .*filebeat.yml'").Output()
 	if err != nil || len(output) == 0 {
 		return 0, fmt.Errorf("process not found")
 	}

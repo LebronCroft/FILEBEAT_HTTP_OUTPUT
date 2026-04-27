@@ -176,7 +176,7 @@ func (b *gzipEncoder) Reset() {
 }
 
 func (b *gzipEncoder) Reader() io.Reader {
-	b.gzip.Close()  // Close to flush all data
+	b.gzip.Close() // Close to flush all data
 	return b.buf
 }
 
@@ -207,12 +207,12 @@ func (b *gzipEncoder) Add(meta, obj interface{}) error {
 
 	if err := enc.Encode(meta); err != nil {
 		b.buf.Truncate(pos)
-		b.gzip.Reset(b.buf)  // Reset gzip writer state after truncate
+		b.gzip.Reset(b.buf) // Reset gzip writer state after truncate
 		return err
 	}
 	if err := enc.Encode(obj); err != nil {
 		b.buf.Truncate(pos)
-		b.gzip.Reset(b.buf)  // Reset gzip writer state after truncate
+		b.gzip.Reset(b.buf) // Reset gzip writer state after truncate
 		return err
 	}
 
@@ -238,7 +238,7 @@ func (b *gzipLinesEncoder) Reset() {
 }
 
 func (b *gzipLinesEncoder) Reader() io.Reader {
-	b.gzip.Close()  // Close to flush all data
+	b.gzip.Close() // Close to flush all data
 	return b.buf
 }
 
@@ -266,12 +266,12 @@ func (b *gzipLinesEncoder) Add(meta, obj interface{}) error {
 
 	if err := b.AddRaw(meta); err != nil {
 		b.buf.Truncate(pos)
-		b.gzip.Reset(b.buf)  // Reset gzip writer state after truncate
+		b.gzip.Reset(b.buf) // Reset gzip writer state after truncate
 		return err
 	}
 	if err := b.AddRaw(obj); err != nil {
 		b.buf.Truncate(pos)
-		b.gzip.Reset(b.buf)  // Reset gzip writer state after truncate
+		b.gzip.Reset(b.buf) // Reset gzip writer state after truncate
 		return err
 	}
 

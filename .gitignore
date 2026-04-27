@@ -1,8 +1,34 @@
-.idea/
+# Binaries and build output
+bin/
+dist/
+build/
+*.exe
+*.test
+*.out
+filebeatexc
+
+# Go workspace and caches
 .gocache/
 .gomodcache/
+vendor/
+
+# Runtime data
 logs/
 *.log
-bin/
-filebeatexc
 performance.log
+data/
+
+# Local configuration and secrets
+.env
+.env.*
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

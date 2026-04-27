@@ -19,14 +19,22 @@ output:
     hosts:
       - "https://example.com:8080"
     path: "/receive/log"
+    parameters:
+      source: "filebeat"
     max_retries: 3
     timeout: 60s
     format: json
     batch_publish: true
     batch_size: 2048
+    compression_level: 0
     loadbalance: false
     headers:
       Authorization: "Bearer your-token-here"
+    tls:
+      certificate_authorities:
+        - "your-cert.pem"
+      certificate: "your-client-cert.pem"
+      key: "your-key.pem"
 
 logging:
   path: ./logs
